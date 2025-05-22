@@ -1,0 +1,95 @@
+[tool.poetry]
+name = "generative_signals"
+version = "0.1.0"
+description = "generating new signal using LLMs"
+authors = ["Gilad Wagner <gwagner@ebay.com>"]
+readme = "README.md"
+packages = [{include = "generative_signals"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10.0,<4.00"
+pykrylov = {version = "1.2.0", source = "ebay-pypi"}
+bxkrylov = {version = "1.8.7", source = "bx-pypi"}
+pandas = "1.5.3"
+pyarrow = "14.0.1"
+tenacity = "8.5.0"
+numpy = "1.26.4"
+
+gpt-call-async = {version = "0.1.0", source = "bx-pypi", optional = true}
+pychomsky = {version = "0.2.21", source = "coreai-pypi", optional = true}
+ellement = {version = "0.2.33", source = "pynlp-pypi", optional = true}
+beautifulsoup4 = {version = "4.12.3", optional = true}
+joblib = {version = "1.4.2", optional = true}
+jsonpickle = {version = "3.3.0", optional = true}
+matplotlib = {version = "3.9.2", optional = true}
+matplotlib-inline = {version = "0.1.7", optional = true}
+mpld3 = {version = "0.5.10", optional = true}
+nltk = {version = "3.9.1", optional = true}
+scipy = {version = "1.14.1", optional = true}
+streamlit = {version = "1.38.0", optional = true}
+transformers = {version = "4.44.2", optional = true}
+tqdm = {version = "4.66.6", optional = true}
+XlsxWriter = {version = "3.2.0", optional = true}
+aiohttp = {version = "3.10.10", optional = true}
+langchain = {version = "0.3.1", optional = true}
+scikit-learn = {version = "1.6.1", optional = true}
+peft = {version = "0.2.0", optional = true}
+tiktoken = {version = "0.9.0", optional = true}
+
+[tool.poetry.extras]
+krylov = [
+    "gpt-call-async", "pychomsky", "ellement", "beautifulsoup4", "joblib", "jsonpickle",
+    "matplotlib", "matplotlib-inline", "mpld3", "nltk", "scipy", "streamlit", "transformers", "tqdm", "numpy",
+    "XlsxWriter", "aiohttp", "langchain", "scikit-learn", "peft", "tiktoken"
+]
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+twine = {version = "5.0.0"}
+pre-commit = "^3.6.0"
+pytest = "^7.4.1"
+pytest-mock = "^3.11.1"
+mock = "^5.1.0"
+faker = "18.11.2"
+pytest-json-report = "^1.5.0"
+mypy = "^1.8.0"
+pyspark = {version = "3.1.1"}
+
+[tool.poetry.group.pyspark]
+optional = true
+
+[tool.poetry.group.pyspark.dependencies]
+pyspark = {version = "3.1.1"}
+
+[[tool.poetry.source]]
+name = "bx-pypi"
+url = "https://artifactory.corp.ebay.com/artifactory/api/pypi/pypi-bx/simple"
+priority = "supplemental"
+
+[[tool.poetry.source]]
+name = "ebay-pypi"
+url = "https://artifactory.corp.ebay.com/artifactory/api/pypi/PyPI/simple"
+priority = "supplemental"
+
+[[tool.poetry.source]]
+name = "coreai-pypi"
+url = "https://artifactory.corp.ebay.com/artifactory/api/pypi/pypi-coreai/simple"
+priority = "supplemental"
+
+[[tool.poetry.source]]
+name = "pynlp-pypi"
+url = "https://artifactory.corp.ebay.com/artifactory/api/pypi/pypi-pynlp/simple"
+priority = "supplemental"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_no_return = true
+explicit_package_bases = true
+disable_error_code = "import-untyped"
