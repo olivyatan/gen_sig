@@ -1,0 +1,198 @@
+krylov:
+  image: hub.tess.io/gen-ai/ellement:latest
+
+  memory: 512
+  cpu_count: 30
+  gpu_count: 2
+  hadoop_cluster: apollo-rno
+  hadoop_user: b_perso
+  default_namespace: shpx
+  tess: tess45
+
+gensig_base:
+  base_path_pykrylov: /data/shpx/data/mmandelbrod/GenSigs/
+  base_path_bash: data/
+  train_data_path: OutPreprocessing/EPRand5pp/per_qualification_set/764.parquet
+  output_dir_base: pipeline_outputs
+#  signals_constants_path: workflows/configs/signals_constants.yml
+  # The key to the specific signals configuration within signals_constants_path
+  signals_conf_key: conf_5_urgency_randomization_sigs_corresponding_features
+  spark_queue: hddq-exprce-perso-high-mem
+  prop_train: 0.7
+  orig_sql_index_colname: raw_sql_index
+  #Which features to select for training. could be 'only_qualified', 'only_configured+pp_qualified', 'all', or specific list.
+  featureset:  only_configured+pp_qualified
+  #featureset_for_metrics: only_configured+pp_qualified #I need the qualification indicators to deconfound
+  random_state: 111 # random seed for any randomization. None for no seed
+  max_num_sigs: 3
+  remove_leakages: dont
+   #TODO: add specifying granularity (e.g. by day, so we don't split mid day)
+  # date - test set consists of the last days,
+  # item_id - split randomly but item_ids are not in both train and test
+  # random - random split
+  split_by : date #item_id #date, #user_id
+  trainset_mode: all #one_vs_all # one_vs_all - for the per-qualified signal dataset (one treatment for training), one_and_all_vs_nsh - 3 treatments: sig, others, both w.r.t. no signal, all  - for the per-qualification set dataset (several equivalent treatments),
+  subject_sig: 'None'
+  external_test_df: 'None' # Use this one instead of train-test split
+  #Specify alternative locations for the pipeline_objects fields for example, when we merely want to infer on a different
+  # Test set and calculate metrics. The keys of this dictionary must be identical to the fields kept in pipeline_objects.
+  take_inputs_from: 'None'
+#    df_test: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/features_labels_df.parquet'
+  calc_auuc_metrics: True
+
+
+
+gensig_pipeline:
+
+  model_name = 'mistral' # 'gpt'
+  business_vertical = 'pna' # 'hag', 'collectibles'
+#  data_path = '/data/shpx/data/mmandelbrod/GenSigs/'
+  infilepath =  f'Datasets/hag_pna_collct_09_24/ExtractedAmended/{business_vertical}_us_09_27_amended.csv' # 'Datasets/hag_pna_collct_09_24/ExtractedAmended/pna_us_09_27_amended.csv'
+  outfile_with_forbidden = f'{business_vertical}_with_forbidden_{model_name}'
+  outfile_no_forbidden = f'{business_vertical}_no_forbidden_{model_name}'
+
+  outpath_tmp_json = os.path.join(data_path, 'Datasets/hag_pna_collct_09_24/GenSigsData/JsonTemp')
+  outpath_final = os.path.join(data_path, 'Datasets/hag_pna_collct_09_24/GenSigsData')
+
+#
+#xgb_pipeline:
+#  training_approach: 'classifier' #'pointwise_per_signal' #pointwise_composite
+#  # how to construct the label for training.
+#  # composite_sig - use composite_shown_colname for the label
+#  # composite_sig_yuri - the labels are composed from both the shown signal and the actual label.
+#  training_label_mode: composite_sig #composite_sig_yuri
+#  use_control_set_for_training: True #If true - include control set instances in training
+#  use_conversion_as_feature: False
+#  label_cols: composite_sig_shown_urgency  #comp_shown #What columns should be used as labels for training and evaluation. Could be a list or a single string.
+#  conversion_colname: label_bbowac  # The name of the column indicating whether there was a conversion or not
+#  treatment_indx_colname: comp_shown # The name of the column indicating what treatment has been applied (i.e. which signals have been shown)
+#  control_or_treated_colname: treatment # The name of the column indicating whether the instance is control or treated
+#  use_only_conversions_for_training: False #False #!!! #If true - only use conversions instances for training
+#  # If a float is specified - keep the converted units of the train set + this fraction of the non converted, and move
+#  # The rest to the test set. Important:
+#  #1.  The fraction is of the converted in the train. So if there are 1000 converted units it means we'll keep 100 on converted ones
+#  # when this fraction is 0.1.
+#  # Use this only when splitting on item id or user id - not on dates, since it'll create leakages!
+#  # To avoid using this option - set to -1.0
+#  keep_converted_and_percent_train: -1.0
+#  reduce_dataset: False
+#  n_shown_colname: n_shown #n_shown_urgency #n_shown # The name of the column indicating the number of shown signals
+#  n_qualified_colname: n_qualified # n_qualified_urgency # The name of the column indicating the number of qualified signals
+#  composite_qualified_colname: composite_sig_quailified_urgency # The name of the column indicating the composite qualified signal
+#  composite_shown_colname: composite_sig_shown_urgency
+#  control_name: control # The value in the control_or_treated_colname column indicating control unit. This is a parameter for the uplift models.
+#  treatment_name: treated # The value in th
+#  num_top_quals: 15
+#  shown_thresh:  10000 #!!!10000 #10
+#  tree_method: exact # tree_method='gpu_hist',
+#  parallelize: True
+#  xgb_objective: binary:logistic #multi:softmax
+#  stratify_train_test_split: True
+#  remove_no_quals: True #Whether or not to remove rows with not a single qualified signal
+#  train_only_over_choiceable: False #If true - train only over choiceable instances
+#  # If true - consider only exponded rows for which the basic XGB model predicted to show. Currently set only to 0
+#  show_based_on_xgb_model: False
+#  sample_weight_method: 'per_qualification_set' #'ivp', 'none', 'only_pos', 'per_qualification_set'
+#  scale_pos_weight: 2
+#  scale_nsh_weight: 0.5
+#  scale_non_choiceable_weight: 1.0
+#  dont_use_nsh: True #If true - discard the nsh instances from the training set altogether
+#  chunk_size: -1 # 10000000 # -1 means don't split to chunks
+#
+#  xgb_params: #The parameters for the XGB model
+#    tree_method: exact
+#    booster: gbtree
+#    objective: multi:softprob #binary:logistic
+#    eval_metric: ['auc', 'mlogloss']
+#    random_state: 42
+#    learning_rate: 0.1
+#    colsample_bytree: 0.9
+#    eta: 0.05
+#    max_depth: 5
+#    n_estimators: 50
+#    subsample: 0.8
+#    gamma: 0.0
+#    reg_alpha: 0.0
+#    reg_lambda: 1.1
+#    min_child_weight: 1.0
+#    nthread: 60
+#    seed: 111
+#  #If a list is specified - train an uplift tree per each of the specified composite qualified signals.
+#  # If no list is specified - train a single uplift tree for all qualified signals.
+#  comp_quals_to_apply: #None
+#  #  - '764'
+##    - '1002|nsh|nsh'
+##  - '1002|937|nsh'
+#  metrics:
+##    - recall_precision_roc
+##    - features_importance
+##    - shap_summary_plot # A bug there. Fix...
+##    - uplift_auc_score
+#    normalize_auuc: False
+#    plot_lift: False
+#    produce_test_metrics: True
+#    produce_metrics_for_base_classifier: False
+#    produce_train_metrics: False  #If True - calculte metrics over the train set as well, in order to detect overfitting.
+#    produce_metrics_over_choiceable_only: True
+#
+#
+##TODO: add below to parsing
+## A set of predefined execution modes. If a mode is specified (under 'current_variations'), its specified parameters
+## will override any other parameters defined under xgb_pipeline.
+#variations:
+#  label_is_comp_sig: #Predict the composite signal
+#    training_label_mode: composite_sig
+#    label_cols: label_bbowac
+#    use_only_conversions_for_training: True
+#
+#  exploded: # Predict the binary bbowac label. Explode signals as features.
+#    training_label_mode: conversion_col
+#    label_cols: label
+#    use_only_conversions_for_training: False # Need to think about this.
+##    show_based_on_xgb_model: True
+#
+#
+#
+#  debug:
+#    train_data_path: OutPreprocessing/processed_treated_and_control_fixed_medium.parquet
+#    shown_thresh:  100
+#
+#  execute_from_stage:
+#    start_stage: generate_metrics_and_plots #predict_on_test # # train_model
+#    cache_to_load:
+#      #Paths of required cached files to load when commencing execution from start_stage
+#      #If saved_pipeline_path is specified - take all fields (lazilly) from the saved pipeline. If specific files are
+#      # specified - load them from the saved pipeline.
+#      saved_pipeline_path:  'pipeline_outputs/xgb_medium'
+#      specific_files:
+#        df_test: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/features_labels_df.parquet'
+##        features_labels_df: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/features_labels_df.parquet'
+##        label_cols_for_training: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/label_cols_for_training'
+##        features_cols_for_training: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/features_cols_for_training'
+##        prepared_data: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/prepared_data.parquet'
+##        shown_colnames: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/shown_colnames'
+##        trained_model: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/trained_model'
+##        df_test_full: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/df_test_full.parquet'
+##        qual_colnames: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/qual_colnames'
+##        test_df_orig_exploaded: "pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/test_df_orig_exploaded.parquet"
+##        predicted_composite_signals: "pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/predicted_composite_signals.parquet"
+#
+#
+#
+##    start_stage:  generate_metrics_and_plots
+##    cache_to_load:
+##        df_pred: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/df_pred.parquet'
+##        df_pred_composite: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/df_pred_composite.parquet'
+##        predicted_treatment_colname: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/predicted_treatment_colname'
+##        actual_treatment_colnanme: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/actual_treatment_colnanme'
+##        pred_comp_prob_colname: 'pipeline_outputs/xgb_non_comp_ctrl_and_trtmt/pred_comp_prob_colname'
+#
+#
+#
+#  current_variation:
+##    - label_is_comp_sig
+##    - exploded
+##    - debug
+##    - execute_from_stage
+
+
